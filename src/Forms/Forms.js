@@ -14,6 +14,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { ToastContainer, toast } from 'react-toastify';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+import { pageNavigationPlugin, PageNavigationPluginOnPageChangeEvent } from '@react-pdf-viewer/page-navigation';
 
 
 
@@ -49,6 +50,14 @@ function PDFViewer(){
   const [showNotesPanel, setShowNotesPanel] = useState(false);
 
   const newplugin = defaultLayoutPlugin()
+
+  const pageNavigationPluginInstance = pageNavigationPlugin();
+  const { CurrentPageInput, GoToNextPage, GoToPreviousPage } = pageNavigationPluginInstance;
+
+  const handlePageChange = (e) => {
+    setHighestScrolledPage(Math.max(highestScrolledPage, e.currentPage));
+  };
+
 
   const onItemClick = ({ numPages }) => {
     pageRefs.current[numPages - 1].scrollIntoView({ behavior: 'smooth' });
@@ -153,12 +162,12 @@ function PDFViewer(){
     }
   }
 
-  const handlePageChange = (pageNumber) => {
+  {/*const handlePageChange = (pageNumber) => {
     const realpageNumber = pageNumber.currentPage;
     if (numPages > 0) { // Only update if numPages is valid
       setHighestScrolledPage(Math.max(highestScrolledPage, realpageNumber));
     }
-  };
+  };*/}
 
   useEffect(() => {
     if (viewPDF && numPages > 0) {
@@ -550,12 +559,11 @@ function PDFViewer(){
                         style={{width:'25%'}}
                         className='mx-auto mb-4'
                       />
-                  <ListGroup>
+                  <ListGroup style={{ width: '100%' }}>
                     {uploadedFiles ? ( // Check if uploadedFiles is defined and has items
                       uploadedFiles.map((file, index) => (
-                        <ListGroup.Item key={index}>
-                          {file.name}
-                          
+                        <ListGroup.Item key={index} className="d-flex flex-column align-items-center">
+                          <div className="w-100 text-truncate mb-2">{file.name}</div>
                           <Button variant="secondary" onClick={() => handleTogglepdfview(file)}>
                             View
                           </Button>
@@ -593,39 +601,92 @@ function PDFViewer(){
                 <div>{viewPDF && <p>Reading Time: {formatTime(elapsedTime)}</p>}</div>
             
               <div className='pdf-container' ref={pdfViewerRef}>
-                <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-                    {viewPDF && <>
-                      <Viewer 
-                        fileUrl={pdfFile} 
-                        plugins={[newplugin]}
-                        onPageChange={handlePageChange}
-                        onDocumentLoadSuccess={({ numPages}) => {
-                          setHighestScrolledPage(1); // Reset for new document
-                        }}
-                        onPageClick={onItemClick}
-                        initialPage={highestScrolledPage}
-                      />
-                      
-                      </>}
+              <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+                    {viewPDF && (
+                      <>
+                        
+                        <Viewer 
+                          fileUrl={pdfFile} 
+                          plugins={[pageNavigationPluginInstance]}
+                          onPageChange={handlePageChange}
+                          onDocumentLoadSuccess={({ numPages }) => {
+                            setHighestScrolledPage(1); // Reset for new document
+                          }}
+                          onPageClick={onItemClick}
+                          initialPage={highestScrolledPage}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems:'center', marginBottom: '1rem', marginTop:'20px'}}>
+                          <GoToPreviousPage>
+                            {(props) => (
+                              <button 
+                              onClick={props.onClick} 
+                              disabled={props.isDisabled} 
+                              className="custom-button next-button"
+                              style={{ 
+                                width: '150px' , 
+                                marginRight:'10px', 
+                                backgroundColor: props.isDisabled ? '#ccc' : '#007bff',
+                                borderRadius:'7px',
+                                color: 'white',
+                                cursor: props.isDisabled ? 'not-allowed' : 'pointer',
+                                padding: '8px 16px',
+                                margin: '0 5px',
+                                
+                              }}
+                              >
+                                Previous
+                              </button>
+                            )}
+                          </GoToPreviousPage>
+                          <CurrentPageInput />
+                          <GoToNextPage>
+                            {(props) => (
+                              <button  
+                              onClick={props.onClick} 
+                              disabled={props.isDisabled}
+                              className="custom-button next-button"
+                              style={{ 
+                                width: '150px' , 
+                                marginRight:'10px', 
+                                backgroundColor: props.isDisabled ? '#ccc' : '#007bff',
+                                borderRadius:'7px',
+                                color: 'white',
+                                cursor: props.isDisabled ? 'not-allowed' : 'pointer',
+                                padding: '8px 16px',
+                                margin: '0 5px',
+                                
+                              }}
+                              >
+                                Next
+                              </button>
+                            )}
+                          </GoToNextPage>
+                        </div>
+                      </>
+                    )}
                     {!viewPDF && <>No PDF</>}
-                </Worker>
+                  </Worker>
+                 
+                
+                
               </div>
+
             </Col>
             </Row>
             </Container>
         
         <div className="allbuttons">
           <div className="mb-3">
-            <Button variant="primary" onClick={handleDefine} className="mx-2">
+            <Button variant="primary" onClick={handleDefine} className="mx-2" style={{ width: '150px' , marginRight:'10px' , marginTop:'10px'}}>
               Define
             </Button>
-            <button className="notes-button mx-2" onClick={handleNotesButtonClick}>
+            <button className="notes-button mx-2" onClick={handleNotesButtonClick} style={{ width: '150px' , marginRight:'10px' , marginTop:'10px' }}>
               Notes
             </button>
-            <Button variant="success" onClick={handleAddToGlossary} className="mx-2">
+            <Button variant="success" onClick={handleAddToGlossary} className="mx-2" style={{ width: '150px' , marginRight:'10px', marginTop:'10px' }}>
               Add To Glossary
             </Button>
-            <Button variant="info" onClick={handleViewGlossary} className="mx-2">
+            <Button variant="info" onClick={handleViewGlossary} className="mx-2" style={{ width: '150px' , marginRight:'10px' , marginTop:'10px'}}>
               View Glossary
             </Button>
             {showNotesPanel && (
@@ -684,10 +745,10 @@ function PDFViewer(){
             </Modal.Footer>
           </Modal>
           <Col>
-            <Button variant="primary" onClick={generateQuiz} className="mx-2">
+            <Button variant="primary" onClick={generateQuiz} className="mx-2" style={{  marginTop:'10px', width:'140px'}} >
               Generate Quiz
             </Button>
-            <Button variant="primary" onClick={generateQA} className="mx-2">
+            <Button variant="primary" onClick={generateQA} className="mx-2" style={{  marginTop:'10px', width:'140px' }}>
               Ask Question
             </Button>
           </Col>
